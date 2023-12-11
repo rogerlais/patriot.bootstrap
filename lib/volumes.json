@@ -1,0 +1,59 @@
+[
+  {
+    "alias": "system",
+    "lv_type": "1",
+    "shares": [{ "name": "System" }, { "name": "Public" }, { "name": "Web" }],
+    "size": "100194313216",
+    "version": "${GLOBAL_VERSION}"
+  },
+  {
+    "alias": "cameras",
+    "lv_type": "1",
+    "shares": [{ "name": "cameras" }],
+    "size": "800000000000",
+    "version": "${GLOBAL_VERSION}"
+  },
+  {
+    "alias": "critico",
+    "lv_type": "1",
+    "shares": [{ "name": "critico" }],
+    "size": "5368709120",
+    "version": "${GLOBAL_VERSION}"
+  },
+  {
+    "alias": "outros",
+    "lv_type": "1",
+    "shares": [{ "name": "suporte" }, { "name": "espelho" }],
+    "size": "214748364800",
+    "version": "${GLOBAL_VERSION}"
+  },
+  {
+    "alias": "entrada",
+    "lv_type": "1",
+    "shares": [{ "name": "entrada" }],
+    "size": "53687091200",
+    "version": "${GLOBAL_VERSION}"
+  },
+  {
+    "alias": "publico",
+    "lv_type": "1",
+    "shares": [{ "name": "publico" }],
+    "size": "43687091200",
+    "version": "${GLOBAL_VERSION}"
+  },
+  {
+    "alias": "restrito",
+    "lv_type": "1",
+    "shares": [{ "name": "restrito" }],
+    "size": "214748364800",
+    "version": "${GLOBAL_VERSION}"
+  },
+  {
+    "alias": "backup",
+    "lv_type": "1",
+    "shares": [{ "name": "backup" }],
+    "comment": "original=26843545600",
+    "size": "26843545600",
+    "version": "${GLOBAL_VERSION}"
+  }
+]
