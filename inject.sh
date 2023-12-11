@@ -33,9 +33,9 @@ fi
 
 #Define APP_ENV_NAME global variable
 if [[ -n "${INPUT_ARG_env}" ]]; then
-    APP_ENV_NAME="${INPUT_ARG_env}"  #Using env forced by from command line
+    APP_ENV_NAME="${INPUT_ARG_env}" #Using env forced by from command line
 else
-    APP_ENV_NAME="$ENV_NAME"  #using env var from process calling
+    APP_ENV_NAME="$ENV_NAME" #using env var from process calling
 fi
 
 #Define APP_LIB_DIR global variable and export all globals from now
@@ -84,7 +84,7 @@ debug_show_vars
 if [ -n "$TARGET" ]; then
     #Using complete_target_address to get final value to target
     declare resolvedTarget
-    complete_target_address resolvedTarget "$TARGET" 
+    complete_target_address resolvedTarget "$TARGET"
     if [ -n "$resolvedTarget" ]; then
         TARGET="$resolvedTarget"
     else
@@ -98,13 +98,11 @@ fi
 
 #Fixing omitted(last chance)
 if [ -z "$SSH_USER" ]; then
-    SSH_USER="$APP_NAS_ADM_ACCOUNT"
+    SSH_USER="$APP_DOMAIN_ADM_ACCOUNT"
 fi
 if [ -z "$SSH_PASSWORD" ]; then
-    SSH_PASSWORD="$APP_NAS_ADM_ACCOUNT_PWD"
+    SSH_PASSWORD="$APP_DOMAIN_ADM_ACCOUNT_PWD"
 fi
-
-echo "Atualizando target host=${TARGET}"
 
 #read values for SSH_USER and SSH_PASSWORD if not set
 if [ -z "$SSH_USER" ]; then
@@ -115,21 +113,31 @@ if [ -z "$SSH_PASSWORD" ]; then
     echo
 fi
 
+echo "Atualizando target host=${TARGET}"
 declare dummy
-#shellcheck disable=2034
-read -p "Enter para confirmar: <cr>" -r dummy
+if [[ "${APP_FORCE_INTERACTIVE}" == '1' ]]; then
+    #shellcheck disable=2034
+    read -p "Enter para confirmar: <cr>" -r dummy
+fi
 
 remotePath="/tmp/patriot/"
 DEST_HOST_PATH="${SSH_USER}@${TARGET}:${remotePath}"
 
-echo "atualizando scripts no NAS..."
+echo "atualizando scripts no dispositivo remoto..."
 #Avoid rsync host key verification error
 sshpass -p "$SSH_PASSWORD" ssh -o StrictHostKeyChecking=no "$SSH_USER"@"$TARGET" "mkdir -p ${remotePath}"
 
 #Copying files
-echo "rsync -av $APP_ROOT_PATH/src/ ${DEST_HOST_PATH}"
-sshpass -p "$SSH_PASSWORD" rsync -av "$APP_ROOT_PATH/src/" "${DEST_HOST_PATH}"
-sshpass -p "$SSH_PASSWORD" rsync -av "$APP_ROOT_PATH/.env" "${DEST_HOST_PATH}"
-sshpass -p "$SSH_PASSWORD" rsync -av "$APP_ROOT_PATH/.secret" "${DEST_HOST_PATH}"
-sshpass -p "$SSH_PASSWORD" rsync -av "$APP_ROOT_PATH/.env.dev" "${DEST_HOST_PATH}"
-sshpass -p "$SSH_PASSWORD" rsync -av "$APP_ROOT_PATH/.env.linux" "${DEST_HOST_PATH}"
+echo "rsync -avz -e ssh $APP_ROOT_PATH/src/ ${DEST_HOST_PATH}"
+sendFilesToHost dummy "$APP_ROOT_PATH/src/" "$remotePath" "$TARGET" "$SSH_USER" "$SSH_PASSWORD"
+sendFilesToHost dummy "$APP_ROOT_PATH/.env" "$remotePath" "$TARGET" "$SSH_USER" "$SSH_PASSWORD"
+sendFilesToHost dummy "$APP_ROOT_PATH/.env.dev" "$remotePath" "$TARGET" "$SSH_USER" "$SSH_PASSWORD"
+sendFilesToHost dummy "$APP_ROOT_PATH/.secret" "$remotePath" "$TARGET" "$SSH_USER" "$SSH_PASSWORD"
+sendFilesToHost dummy "$APP_ROOT_PATH/.env.linux" "$remotePath" "$TARGET" "$SSH_USER" "$SSH_PASSWORD"
+sendFilesToHost dummy "$APP_ROOT_PATH/lib/" "$remotePath" "$TARGET" "$SSH_USER" "$SSH_PASSWORD"
+
+# sshpass -p "$SSH_PASSWORD" rsync -avz -e ssh "$APP_ROOT_PATH/src/" "${DEST_HOST_PATH}"
+# sshpass -p "$SSH_PASSWORD" rsync -avz -e ssh "$APP_ROOT_PATH/.env" "${DEST_HOST_PATH}"
+# sshpass -p "$SSH_PASSWORD" rsync -avz -e ssh "$APP_ROOT_PATH/.secret" "${DEST_HOST_PATH}"
+# sshpass -p "$SSH_PASSWORD" rsync -avz -e ssh "$APP_ROOT_PATH/.env.dev" "${DEST_HOST_PATH}"
+# sshpass -p "$SSH_PASSWORD" rsync -avz -e ssh "$APP_ROOT_PATH/.env.linux" "${DEST_HOST_PATH}"
