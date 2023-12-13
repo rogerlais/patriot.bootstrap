@@ -1,0 +1,23 @@
+{
+    "control": {
+        "port": 8080,
+        "conn_timeout": 60000,
+        "read_timeout": 5,
+        "subnet_cidr": "192.168.1.1/24",
+        "live_only": true,
+        "verbosity": 5
+    },
+    "scan": {
+        "ip_base": "192.168.1.1",
+        "ip_mask": 24,
+        "jump": 0
+    },
+    "profiles": [
+        { "name": "alpine", "rule_name": "alpine" },
+        { "name": "qnap", "rule_name": "qnap" },
+        { "name": "hikvision", "rule_name": "hikvision" },
+        { "name": "dahua", "rule_name": "dahua" },
+        { "name": "huawei", "rule_name": "huawei" },
+        { "name": "h3c", "rule_name": "h3c" }
+    ]
+}
