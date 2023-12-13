@@ -26,7 +26,7 @@ done
 
 #Define root directory global variable
 if [[ -z "${INPUT_ARG_rootdir}" ]]; then
-    APP_ROOT_PATH="${PWD}" #Root from project as default
+    APP_ROOT_PATH=$(dirname "$0") #"${PWD}" #Root from project as default
 else
     APP_ROOT_PATH="${INPUT_ARG_rootdir}"
 fi
@@ -39,8 +39,8 @@ else
 fi
 
 #Define APP_LIB_DIR global variable and export all globals from now
-APP_LIB_DIR="${APP_ROOT_PATH}/lib"
-APP_DBG_DIR="${APP_ROOT_PATH}/lib/debug"
+APP_LIB_DIR=$( dirname "${APP_ROOT_PATH}/../../lib/" )
+APP_DBG_DIR="${APP_ROOT_PATH}/../../lib/debug"
 export APP_ROOT_PATH
 export APP_DBG_DIR
 export APP_LIB_DIR

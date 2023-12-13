@@ -1,4 +1,7 @@
 {
+    "env": "dev",
+    "dbg_flag": true,
+    "profiles_dir": "./profiles",
     "control": {
         "port": 8080,
         "conn_timeout": 60000,

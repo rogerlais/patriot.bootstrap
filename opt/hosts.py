@@ -7,6 +7,8 @@ class HostInfo:
         self.mac = mac
         self.icmp = False
         self.ssh = False
+        self.OSName = ""
+        self.status = -1
 
 
 def format_line(instance, lens, order_attr):
@@ -17,11 +19,12 @@ def format_line(instance, lens, order_attr):
 def print_table(data):
     # Obtém os atributos da classe
     attributes = [
-    r"Nome               ",
-    r"Endereço IP   ",
-    r"Endereço MAC  ",
-    r"ICMP ativo    ",
-    r"SSH ativo      ",
+    r"Nome             ",
+    r"Endereço IP     ",
+    r"Endereço MAC    ",
+    r"ICMP ativo      ",
+    r"SSH ativo       ",
+    r"Sistema       ",
 ]
     # Imprime o cabeçalho
     header = " | ".join(attributes)
@@ -31,7 +34,7 @@ def print_table(data):
     # Imprime os dados
     instance = data[0]
     fixed_len = 18
-    order_attr = ["name", "ip", "mac", "icmp", "ssh"]    
+    order_attr = ["name", "ip", "mac", "icmp", "ssh", "OSName"]
     for item in data:
         line = format_line(item, fixed_len, order_attr)
         print( line )

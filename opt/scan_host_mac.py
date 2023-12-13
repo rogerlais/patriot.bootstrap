@@ -1,16 +1,32 @@
+import os
+import sys
 import paramiko
 import subprocess
 import socket
-from scapy.all import *
-from hosts import HostInfo
+from scapy.all import ICMP, IP
+from hosts import HostInfo, show_hosts
+from patriot_config import Config
+from ping3 import ping, verbose_ping
 
+script_dir = os.path.dirname(os.path.abspath(__file__))
+lib_path = os.path.join(script_dir, 'opt')
+sys.path.append(lib_path)
+from hosts import HostInfo, show_hosts
+
+
+def test_icmp(ip_address, count=4):
+    try:
+        return  ping(ip_address)
+    except Exception as e:
+        #print(f"Error: {e}")
+        return False
 
 def check_icmp(ip):
     try:
-        icmp = IP(dst=ip)/ICMP()
-        resp = sr1(icmp, timeout=1, verbose=0)
-        
-        return resp is not None
+        #icmp = IP(dst=ip)/ICMP()
+        #resp = str(icmp, timeout=1, verbose=0)        
+        #return resp is not None
+        return test_icmp(ip, 3)
 
     except Exception as e:
         return False
@@ -64,19 +80,26 @@ def scan_host(ip, ssh_hosts):
     ssh_hosts.append(host)
 
 
-def scan( subnet , live_only = True ):
+def scan( config ):
     #scan hosts
     ssh_hosts = []
-    if live_only:
-        entries = subprocess.getoutput(f"nmap -p 22 --open -Pn -PE -PS22 {subnet} | grep 'Nmap scan' | cut -d' ' -f5").split()
-    else:
-        entries = subprocess.getoutput(f"nmap -p 22 -Pn -PE -PS22 {subnet} | grep 'Nmap scan' | cut -d' ' -f5").split()
 
+    if config.env == 'dev' and config.dbg_flag:
+        cmd = "nmap -p 22 --open -Pn -PE -PS22 192.168.1.120-130 | grep 'Nmap scan' | cut -d' ' -f5"
+    else:
+        if config.control.live_only:
+            cmd="nmap -p 22 --open -Pn -PE -PS22 {config.control.subnet_cidr} | grep 'Nmap scan' | cut -d' ' -f5"
+            #entries = subprocess.getoutput(f"nmap -p 22 --open -Pn -PE -PS22 {config.control.subnet_cidr} | grep 'Nmap scan' | cut -d' ' -f5").split()
+        else:
+            cmd="nmap -p 22 -Pn -PE -PS22 {config.control.subnet_cidr} | grep 'Nmap scan' | cut -d' ' -f5"
+            #entries = subprocess.getoutput(f"nmap -p 22 -Pn -PE -PS22 {config.control.subnet_cidr} | grep 'Nmap scan' | cut -d' ' -f5").split()
+
+    entries = subprocess.getoutput(cmd).split()
     for ip in entries:
         scan_host(ip, ssh_hosts)
 
     #filter hosts
-    if live_only:
+    if config.control.live_only:
         ssh_hosts = [ host for host in ssh_hosts if ( host.icmp or host.ssh ) ]
 
     return ssh_hosts
@@ -91,8 +114,8 @@ def main():
     entries = subprocess.getoutput(f"nmap -p 22 --open -Pn -PE -PS22 {ip_range} | grep 'Nmap scan' | cut -d' ' -f5").split()
     for ip in entries:
         scan_host(ip, ssh_hosts)
-
     print("\nHosts que respondem ao SSH:")
     show_hosts( ssh_hosts )
+
 if __name__ == "__main__":
     main()

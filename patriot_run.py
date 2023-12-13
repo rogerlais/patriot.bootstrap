@@ -2,8 +2,9 @@ import sys
 import os
 import subprocess
 import socket
-from  patriot_config import load_config
+from  patriot_config import load_config, Config
 import json
+from  process_profile import get_profile_check, inject_profile_script
 
 
 #load initial configuration and libs
@@ -14,24 +15,25 @@ from scan_host_mac import scan
 from hosts import HostInfo, show_hosts
 
 
-
-
 def process_hosts( config, hosts ):
     for host in hosts:
         for profile in config.profiles:
-            to_proceed, bootstrap_proc = get_profile_check( profile , host )
+            to_proceed = get_profile_check( profile.name , host , config )
             if to_proceed:
-                bootstrap_proc( host )
+                print(f"Host {host.name} é relevante para o perfil {profile.name}")
+                inject_profile_script( profile.name , host , config )
                 break
-        
+       
 
 
 def run_scanner( config ):
-    hosts = scan( config.control.subnet_cidr , config.control.live_only )
+    hosts = scan( config )
     return hosts
 
 def main():
     #load initial configuration
+    #Identifica o diretório do script
+    os.environ['PATRIOT_HOME'] = os.path.dirname(os.path.abspath(__file__))
     config = load_config()
 
     try:
