@@ -1,2 +1,20 @@
-.env
-.secret
+# .gitignore for Python projects
+
+# Virtual environment
+venv/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# .secrets files
+**/.secrets
