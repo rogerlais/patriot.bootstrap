@@ -22,5 +22,18 @@
         { "name": "dahua", "rule_name": "dahua" },
         { "name": "huawei", "rule_name": "huawei" },
         { "name": "h3c", "rule_name": "h3c" }
-    ]
+    ],
+    "dev": {
+        "control": {
+            "port": 8080,
+            "conn_timeout": 60000,
+            "read_timeout": 5,
+            "subnet_cidr": "192.168.1.120-140",
+            "live_only": true,
+            "verbosity": 5
+        },
+        "profiles": [
+            { "name": "alpine", "rule_name": "alpine" }
+        ]
+    }
 }

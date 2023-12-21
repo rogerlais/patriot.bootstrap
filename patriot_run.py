@@ -10,7 +10,7 @@ from  process_profile import get_profile_check, inject_profile_script
 #load initial configuration and libs
 script_dir = os.path.dirname(os.path.abspath(__file__))
 lib_path = os.path.join(script_dir, 'opt')
-sys.path.append(lib_path)
+sys.path.append(lib_path)  #* path global to aditional solution packages
 from scan_host_mac import scan
 from hosts import HostInfo, show_hosts
 
@@ -18,11 +18,11 @@ from hosts import HostInfo, show_hosts
 def process_hosts( config, hosts ):
     for host in hosts:
         for profile in config.profiles:
-            to_proceed = get_profile_check( profile.name , host , config )
+            to_proceed = get_profile_check( config, profile.name , host )
             if to_proceed:
                 print(f"Host {host.name} é relevante para o perfil {profile.name}")
                 inject_profile_script( profile.name , host , config )
-                break
+                break #* Stop to first match
        
 
 
@@ -54,7 +54,7 @@ def main():
         # Run the scanner
         hosts = run_scanner( config )
         if config.control.verbosity > 3:
-            print( "Hosts encontrados e relevantes:")
+            print( f"Hosts encontrados e relevantes: {len(hosts)}" )
             show_hosts(hosts)
         
         # Run the rules

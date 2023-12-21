@@ -85,13 +85,13 @@ def scan( config ):
     ssh_hosts = []
 
     if config.env == 'dev' and config.dbg_flag:
-        cmd = "nmap -p 22 --open -Pn -PE -PS22 192.168.1.120-130 | grep 'Nmap scan' | cut -d' ' -f5"
+        cmd = f"nmap -p 22 --open -Pn -PE -PS22 {config.control.subnet_cidr} | grep 'Nmap scan' | cut -d' ' -f5"
     else:
         if config.control.live_only:
-            cmd="nmap -p 22 --open -Pn -PE -PS22 {config.control.subnet_cidr} | grep 'Nmap scan' | cut -d' ' -f5"
+            cmd=f"nmap -p 22 --open -Pn -PE -PS22 {config.control.subnet_cidr} | grep 'Nmap scan' | cut -d' ' -f5"
             #entries = subprocess.getoutput(f"nmap -p 22 --open -Pn -PE -PS22 {config.control.subnet_cidr} | grep 'Nmap scan' | cut -d' ' -f5").split()
         else:
-            cmd="nmap -p 22 -Pn -PE -PS22 {config.control.subnet_cidr} | grep 'Nmap scan' | cut -d' ' -f5"
+            cmd=f"nmap -p 22 -Pn -PE -PS22 {config.control.subnet_cidr} | grep 'Nmap scan' | cut -d' ' -f5"
             #entries = subprocess.getoutput(f"nmap -p 22 -Pn -PE -PS22 {config.control.subnet_cidr} | grep 'Nmap scan' | cut -d' ' -f5").split()
 
     entries = subprocess.getoutput(cmd).split()
