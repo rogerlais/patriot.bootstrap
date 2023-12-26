@@ -2,6 +2,7 @@ import subprocess
 import os
 import sys
 import importlib
+import paramiko
 
 # External modules
 props = None
@@ -33,7 +34,7 @@ def check_host(host):
         "echo \"OS_VER=$(grep -E '^VERSION_ID=' /etc/os-release | cut -d= -f2)\"; "
     )
     result = False
-    ret = execute_remote_command(
+    ret, err = execute_remote_command(
         host.ip, get_ssh_user(host), get_ssh_pwd(host), remote_command
     )
     if ret is not None:
@@ -42,8 +43,11 @@ def check_host(host):
             host.OSName = "Alpine"
             host.OSVersion = get_key_value(ret, "OS_VER")
             host.version = get_key_value(ret, "VERSION")
-            host.status = int(get_key_value(ret, "STATUS"))
-            if host.status < 0:
+            try:
+                host.status = int(get_key_value(ret, "STATUS"))
+            except:
+                host.status = -1
+            if host.status < 0:  # Try again
                 host.status = get_status(host)
             result = host.status < 0  # Need OOB/injection
     return result
@@ -52,9 +56,10 @@ def check_host(host):
 def get_status(host):
     # *Allways dotsource /etc/profile to get PATRIOT_STATUS or any other value
     remote_command = "source /etc/profile > nul; echo ${PATRIOT_STATUS}"
-    ret = execute_remote_command(
-        host.ip, get_ssh_user(), get_ssh_pwd(), remote_command
-    ).replace("\n", "")
+    ret, err = execute_remote_command(
+        host.ip, get_ssh_user(host), get_ssh_pwd(host), remote_command
+    )
+    ret = ret.replace("\n", "")
     # if a number, host has a status in progress
     if ret.isnumeric():
         host.status = int(ret)
@@ -63,9 +68,82 @@ def get_status(host):
     return host.status
 
 
+def copy_folder(sftp, local_dir, remote_dir):
+    local_dir = os.path.abspath(local_dir)
+    try:
+        sftp.stat(remote_dir)
+    except IOError:
+        sftp.mkdir(remote_dir)  #todo:test: verify tooo long path inexistent immpact
+    for item in os.listdir(local_dir):
+        if os.path.isfile(os.path.join(local_dir, item)):
+            sftp.put(os.path.join(local_dir, item), os.path.join(remote_dir, item))
+        else:
+            try:
+                new_dir=os.path.join(remote_dir, item)
+                try:
+                    sftp.stat(new_dir)
+                except IOError:
+                    sftp.mkdir(new_dir)
+            except Exception as e:
+                ret = f"Erro criando diretório {os.path.join(remote_dir, item)}: {e}"
+                return 1, ret
+            copy_folder(
+                sftp, os.path.join(local_dir, item), os.path.join(remote_dir, item)
+            )
+    return 0, None
+
+
 def inject_code_host(host):
     # chama o script de instalação
-    pass
+    # Create a ssh connection to copy files to remote host
+    output = None
+    error = None
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        ssh.connect(host.ip, username=get_ssh_user(host), password=get_ssh_pwd(host))
+
+        # Copy files to remote host
+        sftp = ssh.open_sftp()
+        remote_path = "/tmp/patriot"
+        try:
+            try:
+                sftp.stat(remote_path)
+            except IOError:
+                sftp.mkdir(remote_path)
+            src = os.path.join(base_dir, "install.sh")
+            dst = os.path.join(remote_path, "install.sh")
+            sftp.put(src, dst)
+            src = os.path.join(base_dir, ".env")
+            dst = os.path.join(remote_path, ".env")
+            sftp.put(src, dst)
+            src = os.path.join(base_dir, ".secret")
+            dst = os.path.join(remote_path, ".secret")
+            sftp.put(src, dst)
+            # lib files at two levels up
+            src = os.path.join(base_dir, "lib/")
+            dst = os.path.join(remote_path, "lib/")
+            ret, error = copy_folder(sftp, src, dst)
+            if ret != 0:
+                return None, error
+        except Exception as e:
+            error = f"Error copying files to remote host: {e}"
+            output = None
+            return output, error
+        finally:
+            sftp.close()
+
+        # Execute the script
+        remote_command = "chmod +x /tmp/patriot/install.sh; ash /tmp/patriot/install.sh"
+        stdin, stdout, stderr = ssh.exec_command(remote_command)
+        output = stdout.read().decode("utf-8")
+        error = stderr.read().decode("utf-8")
+        print(f"Saida do comando: {output}")
+        print(f"Erro do comando: {error}")
+    finally:
+        if ssh.get_transport().is_active():
+            ssh.close()
+    return output, error
 
 
 def get_alpine_pwd(host):
@@ -109,25 +187,40 @@ def get_ssh_pwd(host):
         return value
 
 
-
 def execute_remote_command(hostname, username, password, command):
+    ssh = paramiko.SSHClient()
+
+    # O método set_missing_host_key_policy() decide o que fazer se o servidor ao qual você está se conectando não estiver no known_hosts
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
     try:
-        ssh_command = f"sshpass -p {password} ssh {username}@{hostname} '{command}'"
+        # Tente estabelecer uma conexão
+        try:
+            ssh.connect(hostname, username=username, password=password)
+        except paramiko.AuthenticationException:
+            print("Falha na autenticação.")
+            return None, "Falha na autenticação."
+        except paramiko.SSHException as e:
+            print(f"Erro na conexão: {e}")
+            print("Atualizando a chave SSH local...")
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            try:
+                ssh.connect(hostname, username=username, password=password)
+            except Exception as e:
+                return None, f"Erro na conexão. {e}"
+        except Exception as e:
+            return None, f"Erro na conexão. {e}"
 
-        # Executa o comando remoto e captura a saída
-        result = subprocess.run(ssh_command, shell=True, capture_output=True, text=True)
+        # Execute o comando
+        stdin, stdout, stderr = ssh.exec_command(command)
 
-        # Verifica se a execução foi bem-sucedida
-        if result.returncode == 0:
-            return result.stdout
-        else:
-            print(
-                f"Erro ao executar o comando remoto: ({result.returncode}) \n {result.stderr}"
-            )
-            return None
-    except Exception as e:
-        print(f"Erro ao conectar ao host remoto: {str(e)}")
-        return None
+        # Capture a saída do comando
+        output = stdout.read().decode("utf-8")
+        error = stderr.read().decode("utf-8")
+    finally:
+        if ssh.get_transport() and ssh.get_transport().is_active():
+            ssh.close()
+    return output, error
 
 
 def load_module():
@@ -159,7 +252,7 @@ def main():
     pwd = props.read_config_value(fpath, "SSH_USER_PWD")
     hostname = "192.168.1.127"
     remote_command = 'grep -E "^(ID|VERSION_ID)=" /etc/os-release'
-    result = execute_remote_command(hostname, username, pwd, remote_command)
+    result, err = execute_remote_command(hostname, username, pwd, remote_command)
     print(result)
 
 

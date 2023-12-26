@@ -11,8 +11,7 @@ lib_path = os.path.join(script_dir, "opt")
 sys.path.append(lib_path)
 from scan_host_mac import scan
 from hosts import HostInfo, show_hosts
-from patriot_config import Config
-
+from patriot_config import Config, load_config
 
 def inject_profile_script(profile_name, host, config):
     # todo:design reagrupar elementos em comum para a carga de módulos
@@ -36,16 +35,17 @@ def inject_profile_script(profile_name, host, config):
         # if hasattr(module, "check_host") and callable(getattr(module, "check_host")):
         if hasattr(module, "inject_code_host"):
             inject_code_host_function = getattr(module, "inject_code_host")
-            result = inject_code_host_function(host)
+            result, error = inject_code_host_function(host)
             return result
         else:
             return f"Módulo {full_path} não possui uma função 'check_host' válida."
     except Exception as e:
+        if config.control.verbosity > 3:
+            print(f"Erro ao importar o módulo {full_path}: {str(e)}")
         return f"Erro ao importar o módulo {full_path}: {str(e)}"
 
 
 def get_profile_check(config, profile_name, item):
-    # todo:design remover o lixo
     # Compound dinamic module from his name
     mod_name = "device_handler"
     mod_dir = os.path.join(config.profiles_dir, profile_name)
@@ -57,7 +57,6 @@ def get_profile_check(config, profile_name, item):
             # Importa dinamicamente o módulo usando imp.load_source
             module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(module)
-            #! remover module = importlib.import_module(mod_name, mod_dir)
         except Exception as e:
             print(f"Erro ao importar o módulo {mod_name} em {mod_dir}: {str(e)}")
             return False
@@ -86,16 +85,17 @@ def get_profile_check(config, profile_name, item):
 
 def main():
     # take current path and append /profiles/
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    profile_path = os.path.join(script_dir, "profiles")
+    #script_dir = os.path.dirname(os.path.abspath(__file__))
+    #profile_path = os.path.join(script_dir, "profiles")
     test = HostInfo(name="teste", ip="teste", mac="HostInfo")
     test_col = [
         test,
         HostInfo(name="nomegrande-teste2", ip="teste2", mac="HostInfo2"),
         HostInfo(name="teste2", ip="teste2", mac="HostInfo2"),
     ]
+    config = load_config()
     for item in test_col:
-        resultado = get_profile_check("alpine", item, profile_path)
+        resultado = get_profile_check(config, "alpine", item)
         print(resultado)
 
 

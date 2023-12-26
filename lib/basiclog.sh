@@ -3,12 +3,6 @@
 declare -a LOG_LEVELS
 # https://en.wikipedia.org/wiki/Syslog#Severity_level
 LOG_LEVELS=([0]="emerg" [1]="alert" [2]="crit" [3]="err" [4]="warning" [5]="notice" [6]="info" [7]="debug")
-declare VOLUME_INEXISTS=10
-declare VOLUME_OK=0
-declare VOLUME_DIVERGENT=20
-export VOLUME_INEXISTS
-export VOLUME_OK
-export VOLUME_DIVERGENT
 
 #todo:lib: Put initialization process, aka log path and rotation. Export pertinent data after this
 if [ -z "$APP_LOG_FILE" ]; then
@@ -40,6 +34,7 @@ touch "$APP_LOG_FILE"
 #Globals for log
 export APP_LOG_FILE
 export APP_VERBOSE_LEVEL=10  #Highest level of verbosity
+
 
 function slog() {
 	#rotina de registro de logs
